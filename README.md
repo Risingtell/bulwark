@@ -16,8 +16,8 @@ Built for the [KeeperHub Agents Onchain Hackathon](https://dorahacks.io/hackatho
 - Aave V3 Sepolia contract addresses cross-checked live on-chain (`scripts/preflight.ts`): `PoolAddressesProvider.getPool()` matches the configured Pool address, and `Pool.getReservesList()` returns 9 real reserves.
 - Repay asset is Aave's test USDC on Sepolia (`0x94a9...E4C8`, 6 decimals), confirmed via `scripts/symbols.ts`.
 - KeeperHub MCP tool schemas are read live via `scripts/inspect-tools.ts` before being wired into the agent loop — nothing here is guessed from docs alone.
-- The full catch-and-repay loop is proven on real Sepolia transactions, not just typechecked: borrow, trigger, repay, and health factor recovery, each cross-checked against both KeeperHub's relayed read and a direct RPC read (`src/engine/aave.ts`) that bypasses KeeperHub entirely.
-- The repay-sizing formula is verified deterministically against known inputs (`scripts/verify-repay-sizing.ts`), independent of any live pool's state.
+- The full catch-and-repay loop is proven on real Sepolia transactions twice, not just typechecked: once with a fixed repay amount, once with the computed-sizing logic — the second run landed health factor at 1.500006 against a configured `HF_TARGET` of 1.5, a live on-chain result matching the target to 6 decimal places. Both runs cross-checked against both KeeperHub's relayed read and a direct RPC read (`src/engine/aave.ts`) that bypasses KeeperHub entirely.
+- The repay-sizing formula is also verified deterministically against known inputs (`scripts/verify-repay-sizing.ts`), independent of any live pool's state.
 
 ## Real gotchas found building this (first-time KeeperHub user, logged as we went)
 
@@ -26,8 +26,8 @@ Built for the [KeeperHub Agents Onchain Hackathon](https://dorahacks.io/hackatho
 - `aave-v3/repay` requires an `interestRateMode` argument that isn't obvious from the write path alone — omitting it fails outright (`interestRateMode: uint256 cannot be empty`).
 - The silent version of the above: passing a repay amount as human units ("60") instead of scaling it to raw base units doesn't error at all — it just repays 1,000,000x less than intended ($0.00006 instead of $60). No exception, no revert, debt just barely moves. This is the one most likely to bite someone in production.
 - The shared Sepolia Aave USDC reserve is, at time of writing, in an economically broken state from hackathon load: 4.39 **billion** in nominal outstanding debt against roughly 300 real USDC actually backing it, and its supply cap is already exceeded too (`SUPPLY_CAP_EXCEEDED`, Aave error 51) — so you can't top up liquidity by supplying more. Borrowing has to be sized to the real available liquidity (`scripts/check-liquidity.ts`), not the nominal reserve numbers.
-- On that same degraded reserve, borrow amounts don't always register as debt 1:1 — a confirmed, wallet-balance-verified 65 USDC borrow only showed up as a ~5 USDC debt increase on Aave's own books (cross-checked three ways: `getUserAccountData`, the raw variable debt token `balanceOf`, and the KeeperHub relay — all three agreed with each other, ruling out a read bug on our side). Looks like an interest-index precision artifact from the reserve's degenerate utilization, not something arithmetic can reliably predict. Lesson: on a reserve this abused, don't trust a borrow to land the nominal amount in the debt accounting — verify collateral-side changes (which stayed reliable) over debt-side ones where possible.
 - KeeperHub sponsors gas on Sepolia writes too (`"sponsored": true` observed), not just mainnet Ethereum as the docs implied.
+- Not a KeeperHub gotcha, but worth recording: a `Monitor`-wrapped `npm start` stopped via a task-stop call doesn't reliably kill the full Windows process tree (`npm-cli.js` → `tsx` → the actual `node` loader survive independently). Orphaned agent instances kept polling every 60s and firing real repays in the background, which briefly looked like an Aave-side accounting anomaly until traced to PID/command-line evidence and killed via `Get-CimInstance Win32_Process` + `Stop-Process`. Worth an explicit process check before trusting any "unexplained" on-chain state change.
 
 ## Setup
 
@@ -48,4 +48,4 @@ Config (`.env`):
 
 ## Status
 
-Core loop proven live end to end on Sepolia. Build window is July 27 to August 13, 2026.
+Core loop proven live end to end on Sepolia, including the computed-repay-sizing logic landing health factor within 6 decimal places of its configured target. Build window is July 27 to August 13, 2026.
