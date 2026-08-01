@@ -5,7 +5,7 @@ import { tick } from "../src/agent.js";
 
 async function main() {
   const client = await connectKeeperHub(process.env.KEEPERHUB_API_KEY!);
-  await tick(client, "0x000000000000000000000000000000000000dEaD", 1.2, "50");
+  await tick(client, "0x000000000000000000000000000000000000dEaD", { hfThreshold: 1.2, hfTarget: 1.5, maxRepayRawUnits: null });
 }
 
 main().catch((e) => {

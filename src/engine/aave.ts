@@ -5,7 +5,7 @@
  */
 import { type Address, getAddress } from "viem";
 import { publicClient, AAVE_V3_SEPOLIA } from "../chain/sepolia.js";
-import { POOL_ABI } from "./abi.js";
+import { POOL_ABI, ORACLE_ABI } from "./abi.js";
 import { classifyRisk, parseHealthFactor, type RiskLevel } from "./healthFactor.js";
 
 export interface PositionSnapshot {
@@ -39,6 +39,16 @@ export async function checkPosition(address: string): Promise<PositionSnapshot> 
     healthFactor,
     riskLevel: classifyRisk(healthFactor),
   };
+}
+
+/** Live oracle price of `asset`, in the same base-currency scale as getUserAccountData's totalDebtBase. */
+export async function getAssetPriceBase(asset: Address): Promise<bigint> {
+  return publicClient.readContract({
+    address: AAVE_V3_SEPOLIA.ORACLE,
+    abi: ORACLE_ABI,
+    functionName: "getAssetPrice",
+    args: [asset],
+  });
 }
 
 export { classifyRisk };

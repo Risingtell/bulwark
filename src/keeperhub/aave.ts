@@ -9,7 +9,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { callTool } from "./client.js";
 import { classifyRisk, parseHealthFactor, type RiskLevel } from "../engine/healthFactor.js";
-import { sepolia, USDC } from "../chain/sepolia.js";
+import { sepolia } from "../chain/sepolia.js";
 
 const CHAIN_ID = String(sepolia.id);
 /** Aave V3 interestRateMode: 1 = stable, 2 = variable. Bulwark's borrow flow only ever opens variable-rate debt. */
@@ -65,22 +65,23 @@ export interface RepayResult {
 }
 
 /**
- * Repays `amountUsdc` (human units, e.g. "50") of the given asset on behalf of `borrower`. No borrower
- * approval needed — Aave's repay() allows anyone to pay down anyone's debt.
+ * Repays `amountRawUnits` (the asset's own raw base units, e.g. "60000000" for 60 USDC — same convention
+ * as every other execute_protocol_action/execute_contract_call amount in this codebase) of the given
+ * asset on behalf of `borrower`. No borrower approval needed — Aave's repay() allows anyone to pay down
+ * anyone's debt.
  *
- * KeeperHub's execute_protocol_action amount fields are raw base-unit integers, not human-readable
- * (same gotcha as the INVALID_MINT_AMOUNT case during setup) — confirmed live 2026-07-31: passing "60"
- * unscaled repaid 0.00006 USDC (60 base units), not 60 USDC. Debt barely moved and no error was thrown,
- * so this fails silently if you don't scale it.
+ * Caller is responsible for the human-units-to-raw-units conversion (see engine/repaySizing.ts) — this
+ * function used to do that scaling itself from a "human units" string and silently under-repaid by 1e6x
+ * when that conversion was missing (confirmed live 2026-07-31: passing "60" unscaled repaid 0.00006 USDC,
+ * no error thrown). Taking raw units directly removes the chance of that mismatch recurring here.
  */
-export async function repayOnBehalfOf(client: Client, params: { asset: string; amountUsdc: string; borrower: string; idempotencyKey?: string }): Promise<RepayResult> {
-  const amountBaseUnits = (BigInt(params.amountUsdc) * 10n ** BigInt(USDC.decimals)).toString();
+export async function repayOnBehalfOf(client: Client, params: { asset: string; amountRawUnits: string; borrower: string }): Promise<RepayResult> {
   const res = await callTool(client, "execute_protocol_action", {
     actionType: "aave-v3/repay",
     params: {
       network: CHAIN_ID,
       asset: params.asset,
-      amount: amountBaseUnits,
+      amount: params.amountRawUnits,
       onBehalfOf: params.borrower,
       interestRateMode: VARIABLE_RATE_MODE,
     },

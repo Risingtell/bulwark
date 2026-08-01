@@ -1,23 +1,29 @@
 /**
  * Run this yourself, locally, with your own borrower private key — same key
  * as borrow-as-borrower.ts, never shared with or seen by anyone else.
- * Withdraws LINK collateral on Aave V3 Sepolia back to yourself. Needed
- * because the real available liquidity in the shared Sepolia USDC reserve
- * (~304 USDC, verified via scripts/check-liquidity.ts — other hackathon
- * builders have drained it far below its nominal supply) can't support the
- * originally planned 780 USDC borrow against 40 LINK. Withdrawing down to
- * 10 LINK first means a smaller, actually-borrowable 200 USDC debt still
- * lands health factor under the 1.2 trigger. Reads BORROWER_PRIVATE_KEY from
- * the environment; set it inline for one run, don't put it in .env:
+ * Withdraws LINK collateral on Aave V3 Sepolia back to yourself. Reads
+ * BORROWER_PRIVATE_KEY from the environment; set it inline for one run,
+ * don't put it in .env:
  *
  *   BORROWER_PRIVATE_KEY=0xyourkey npx tsx scripts/withdraw-as-borrower.ts
+ *
+ * SECOND WITHDRAW (2026-08-01): the second borrow (65 USDC) landed the full
+ * amount in the wallet (confirmed via scripts/check-usdc-balance.ts) but for
+ * reasons that look like an index/precision artifact on this heavily-abused
+ * shared reserve, only ~5 of it registered as new debt on Aave's own books
+ * (confirmed via both getUserAccountData AND the raw debt token balanceOf —
+ * see scripts/check-debt-token.ts — so it's a real Aave-side effect, not a
+ * read bug). Rather than fight that unpredictable debt-side accounting with
+ * more borrowing, pulling collateral out is a separate, well-behaved code
+ * path that gets HF under threshold deterministically without touching the
+ * scarce shared USDC liquidity at all.
  */
 import { createWalletClient, http, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia, AAVE_V3_SEPOLIA } from "../src/chain/sepolia.js";
 
 const LINK = "0xf8Fb3713D459D7C1018BD0A49D19b4C44290EBE5";
-const WITHDRAW_AMOUNT_LINK = "30000000000000000000"; // 30 LINK, 18 decimals — leaves 10 LINK (~$300) as collateral
+const WITHDRAW_AMOUNT_LINK = "3000000000000000000"; // 3 LINK, 18 decimals — leaves ~7.3 LINK (~$220), landing HF around 1.13 against current debt
 
 const POOL_ABI = parseAbi([
   "function withdraw(address asset, uint256 amount, address to) external returns (uint256)",

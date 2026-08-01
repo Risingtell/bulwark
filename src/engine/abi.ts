@@ -29,6 +29,10 @@ export const POOL_ABI = [
   },
 ] as const;
 
+export const ORACLE_ABI = [
+  { type: "function", name: "getAssetPrice", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
+] as const;
+
 export const ERC20_ABI = [
   { type: "function", name: "symbol", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "uint256" }] },

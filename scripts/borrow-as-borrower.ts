@@ -8,17 +8,18 @@
  *
  * Use a throwaway/testnet-only key, not one holding real funds.
  *
- * Run scripts/withdraw-as-borrower.ts FIRST — the shared Sepolia USDC
- * reserve's real liquidity is only ~304 USDC (verified via
- * scripts/check-liquidity.ts), so the original 780 USDC target isn't
- * borrowable regardless of collateral. 200 USDC against 10 LINK is.
+ * SECOND BORROW (2026-08-01): the first 200 USDC borrow + partial 60 USDC
+ * repay already happened (HF recovered to ~1.66, SAFE). This amount is now
+ * sized to re-trigger Bulwark a second time to verify the new computed-repay-
+ * sizing logic (src/engine/repaySizing.ts) against a real position instead
+ * of just a no-debt smoke test — lands HF around 1.13 against current debt.
  */
 import { createWalletClient, http, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia, AAVE_V3_SEPOLIA } from "../src/chain/sepolia.js";
 
 const USDC = "0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8";
-const BORROW_AMOUNT_USDC = "200000000"; // 200 USDC, 6 decimals — lands HF around 1.125 against the 10 LINK left after withdraw-as-borrower.ts
+const BORROW_AMOUNT_USDC = "65000000"; // 65 USDC, 6 decimals — pushes total debt to ~$205, landing HF around 1.13
 
 const POOL_ABI = parseAbi([
   "function borrow(address asset, uint256 amount, uint256 interestRateMode, uint16 referralCode, address onBehalfOf) external",
