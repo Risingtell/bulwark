@@ -1,5 +1,5 @@
 /**
- * Shared health-factor parsing — Aave expresses it as an 18-decimal fixed
+ * Shared health-factor parsing. Aave expresses it as an 18-decimal fixed
  * point uint256, with uint256::MAX as the "no debt / infinite" sentinel.
  * Used by both the direct-viem read path (engine/aave.ts, for independent
  * verification) and the KeeperHub relay path (keeperhub/aave.ts, the one

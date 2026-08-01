@@ -1,5 +1,5 @@
 /**
- * Direct viem read of Aave V3 (Sepolia) — used as an independent check
+ * Direct viem read of Aave V3 (Sepolia). Used as an independent check
  * against the KeeperHub-relayed read (keeperhub/aave.ts), not the agent's
  * primary path. If the two ever disagree, that's a real finding, not noise.
  */

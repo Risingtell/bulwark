@@ -1,4 +1,4 @@
-/** One-shot dry run of the agent's tick logic against a no-debt address — confirms the KeeperHub read path end to end without any repay attempt. */
+/** One-shot dry run of the agent's tick logic against a no-debt address. Confirms the KeeperHub read path end to end without any repay attempt. */
 import "dotenv/config";
 import { connectKeeperHub } from "../src/keeperhub/client.js";
 import { tick } from "../src/agent.js";

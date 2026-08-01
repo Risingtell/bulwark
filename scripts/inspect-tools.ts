@@ -1,6 +1,6 @@
 /**
  * Run once a KEEPERHUB_API_KEY is available. Prints the real tool list and
- * schemas from KeeperHub's MCP server — used to confirm the exact input
+ * schemas from KeeperHub's MCP server. Used to confirm the exact input
  * shape of execute_check_and_execute / execute_protocol_action before
  * wiring the agent loop against it. Never guess a tool schema; read it here.
  */

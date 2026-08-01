@@ -1,7 +1,7 @@
 /**
  * Aave V3 reads and repay writes relayed through KeeperHub's protocol-action
  * tools (execute_protocol_action, actionType aave-v3/*), not a raw contract
- * call — KeeperHub normalizes the ABI details, we only handle the numbers.
+ * call. KeeperHub normalizes the ABI details, we only handle the numbers.
  * Verified live 2026-07-29: aave-v3/get-user-account-data against a fresh
  * address round-trips uint256::MAX for healthFactor, matching our own
  * MAX_UINT256 sentinel handling.
@@ -65,12 +65,12 @@ export interface RepayResult {
 }
 
 /**
- * Repays `amountRawUnits` (the asset's own raw base units, e.g. "60000000" for 60 USDC — same convention
+ * Repays `amountRawUnits` (the asset's own raw base units, e.g. "60000000" for 60 USDC, the same convention
  * as every other execute_protocol_action/execute_contract_call amount in this codebase) of the given
- * asset on behalf of `borrower`. No borrower approval needed — Aave's repay() allows anyone to pay down
+ * asset on behalf of `borrower`. No borrower approval needed: Aave's repay() allows anyone to pay down
  * anyone's debt.
  *
- * Caller is responsible for the human-units-to-raw-units conversion (see engine/repaySizing.ts) — this
+ * Caller is responsible for the human-units-to-raw-units conversion (see engine/repaySizing.ts). This
  * function used to do that scaling itself from a "human units" string and silently under-repaid by 1e6x
  * when that conversion was missing (confirmed live 2026-07-31: passing "60" unscaled repaid 0.00006 USDC,
  * no error thrown). Taking raw units directly removes the chance of that mismatch recurring here.

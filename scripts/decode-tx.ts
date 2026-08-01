@@ -1,10 +1,9 @@
-/** Decodes a submitted tx's actual calldata against Aave's real borrow() signature — settles disputes between what we intended to send and what the chain actually recorded, independent of any relay's read path. */
+/** Decodes a submitted tx's actual calldata against Aave's real borrow() signature. Settles disputes between what we intended to send and what the chain actually recorded, independent of any relay's read path. */
 import { decodeAbiParameters, parseAbiParameters } from "viem";
 import { publicClient } from "../src/chain/sepolia.js";
 
 async function main() {
-  const hash = process.argv[2] as `0x${string}`;
-  if (!hash) throw new Error("Usage: npx tsx scripts/decode-tx.ts 0x<txHash>");
+  const hash = (process.argv[2] as `0x${string}`) ?? "0xf59fdb427cea9702f06ff2db4f84e8c8171769e33a07b8b2967ab0744c50b547";
 
   const tx = await publicClient.getTransaction({ hash });
   const receipt = await publicClient.getTransactionReceipt({ hash });

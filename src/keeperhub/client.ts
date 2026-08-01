@@ -1,6 +1,6 @@
 /**
  * Thin MCP client wrapper around KeeperHub's remote MCP server. Bulwark is
- * the calling agent; KeeperHub is the execution layer — every write this
+ * the calling agent; KeeperHub is the execution layer. Every write this
  * agent makes goes through here, never through a local signer.
  *
  * API surface verified against the installed @modelcontextprotocol/sdk

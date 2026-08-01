@@ -1,16 +1,21 @@
 {
   "name": "bulwark",
   "version": "0.1.0",
-  "description": "Bulwark — the execution counterpart to VigilOK. Watches an Aave V3 (Sepolia) position's health factor and repays debt on the borrower's behalf through KeeperHub when it drops below a safe threshold.",
+  "description": "Bulwark, the execution counterpart to VigilOK. Watches an Aave V3 (Sepolia) position's health factor and repays debt on the borrower's behalf through KeeperHub when it drops below a safe threshold.",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "preflight": "tsx scripts/preflight.ts",
     "symbols": "tsx scripts/symbols.ts",
     "inspect-tools": "tsx scripts/inspect-tools.ts",
     "dev": "tsx watch src/agent.ts",
     "start": "tsx src/agent.ts",
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "verify": "tsx scripts/verify-live-proof.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

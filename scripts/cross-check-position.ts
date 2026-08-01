@@ -1,4 +1,4 @@
-/** Cross-checks KeeperHub's relayed read against the direct-viem read for the same address — if they disagree, that's a real finding. */
+/** Cross-checks KeeperHub's relayed read against the direct-viem read for the same address. If they disagree, that's a real finding. */
 import "dotenv/config";
 import { connectKeeperHub } from "../src/keeperhub/client.js";
 import { checkPositionViaKeeperHub } from "../src/keeperhub/aave.js";

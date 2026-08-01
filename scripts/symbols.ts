@@ -1,4 +1,4 @@
-/** Lists every Aave V3 Sepolia reserve with its symbol and decimals — confirms the repay asset (USDC) before it's hardcoded into chain/sepolia.ts. */
+/** Lists every Aave V3 Sepolia reserve with its symbol and decimals. Confirms the repay asset (USDC) before it's hardcoded into chain/sepolia.ts. */
 import { publicClient, AAVE_V3_SEPOLIA } from "../src/chain/sepolia.js";
 import { ERC20_ABI } from "../src/engine/abi.js";
 

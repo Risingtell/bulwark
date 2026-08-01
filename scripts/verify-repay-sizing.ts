@@ -1,6 +1,6 @@
 /**
  * Deterministic check of the computed-repay-sizing math against known
- * inputs — doesn't depend on the shared Sepolia reserve's live (and, per
+ * inputs. Doesn't depend on the shared Sepolia reserve's live (and, per
  * 2026-08-01 findings, unreliable) debt accounting at all.
  */
 import { computeRepayAmountBase, baseUnitsToAssetRawUnits } from "../src/engine/repaySizing.js";
@@ -13,7 +13,7 @@ function check(label: string, condition: boolean) {
 }
 
 async function main() {
-  // Case 1: real numbers seen live 2026-08-01 (HF=1.1054546309873037, debt=$210.009915) — repay to reach HF_TARGET=1.5.
+  // Case 1: real numbers seen live 2026-08-01 (HF=1.1054546309873037, debt=$210.009915). Repay to reach HF_TARGET=1.5.
   const hf1 = 1.1054546309873037;
   const debt1 = 21000991500n; // matches the live totalDebtBase read at that HF
   const target1 = 1.5;

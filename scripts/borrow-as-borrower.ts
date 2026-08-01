@@ -1,5 +1,5 @@
 /**
- * Run this yourself, locally, with your own borrower private key — it never
+ * Run this yourself, locally, with your own borrower private key. It never
  * gets shared with or seen by anyone else. Borrows USDC on Aave V3 Sepolia,
  * onBehalfOf yourself (interestRateMode=2, variable). Reads BORROWER_PRIVATE_KEY
  * from the environment; set it inline for one run, don't put it in .env:
@@ -12,14 +12,14 @@
  * repay already happened (HF recovered to ~1.66, SAFE). This amount is now
  * sized to re-trigger Bulwark a second time to verify the new computed-repay-
  * sizing logic (src/engine/repaySizing.ts) against a real position instead
- * of just a no-debt smoke test — lands HF around 1.13 against current debt.
+ * of just a no-debt smoke test. Lands HF around 1.13 against current debt.
  */
 import { createWalletClient, http, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia, AAVE_V3_SEPOLIA } from "../src/chain/sepolia.js";
 
 const USDC = "0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8";
-const BORROW_AMOUNT_USDC = "65000000"; // 65 USDC, 6 decimals — pushes total debt to ~$205, landing HF around 1.13
+const BORROW_AMOUNT_USDC = "65000000"; // 65 USDC, 6 decimals, pushes total debt to ~$205, landing HF around 1.13
 
 const POOL_ABI = parseAbi([
   "function borrow(address asset, uint256 amount, uint256 interestRateMode, uint16 referralCode, address onBehalfOf) external",

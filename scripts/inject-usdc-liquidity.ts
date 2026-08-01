@@ -1,7 +1,7 @@
 /**
  * One-off fix for a drained shared testnet reserve: the Aave Sepolia USDC
  * pool has 4.39B in nominal outstanding debt (every hackathon builder
- * hammering the same faucet) but only ~304 real USDC backing it — not
+ * hammering the same faucet) but only ~304 real USDC backing it, not
  * enough to satisfy our planned 780 USDC borrow. Mints fresh test USDC to
  * the org wallet via Aave's Sepolia faucet, then supplies most of it into
  * the pool to inject real liquidity, keeping a chunk back in the org wallet
@@ -36,7 +36,7 @@ async function main() {
 
   const orgBefore = await publicClient.readContract({ address: USDC, abi: ERC20_ABI, functionName: "balanceOf", args: [ORG_WALLET] });
   const poolBefore = await publicClient.readContract({ address: USDC, abi: ERC20_ABI, functionName: "balanceOf", args: [USDC_A_TOKEN] });
-  console.log("Before — org wallet USDC:", Number(orgBefore) / 1e6, "| real pool liquidity:", Number(poolBefore) / 1e6);
+  console.log("Before, org wallet USDC:", Number(orgBefore) / 1e6, "| real pool liquidity:", Number(poolBefore) / 1e6);
 
   console.log("\nMinting 2000 USDC to org wallet...");
   const mintRes = await callTool(client, "execute_contract_call", {
@@ -61,7 +61,7 @@ async function main() {
 
   const orgAfter = await publicClient.readContract({ address: USDC, abi: ERC20_ABI, functionName: "balanceOf", args: [ORG_WALLET] });
   const poolAfter = await publicClient.readContract({ address: USDC, abi: ERC20_ABI, functionName: "balanceOf", args: [USDC_A_TOKEN] });
-  console.log("\nAfter — org wallet USDC:", Number(orgAfter) / 1e6, "| real pool liquidity:", Number(poolAfter) / 1e6);
+  console.log("\nAfter, org wallet USDC:", Number(orgAfter) / 1e6, "| real pool liquidity:", Number(poolAfter) / 1e6);
 }
 
 main().catch((e) => {

@@ -1,6 +1,6 @@
 /**
  * Live verification of the Aave V3 Sepolia addresses before anything is built
- * on top of them — per house rule, never trust a fetched/summarized address,
+ * on top of them. Per house rule, never trust a fetched or summarized address:
  * confirm against a real RPC read first.
  */
 import { createPublicClient, http, defineChain } from "viem";
@@ -35,10 +35,10 @@ async function main() {
 
   for (const [name, address] of Object.entries(CANDIDATES)) {
     const code = await client.getCode({ address: address as `0x${string}` });
-    console.log(`${name} ${address} — bytecode: ${code && code !== "0x" ? `${(code.length - 2) / 2} bytes` : "EMPTY (not a contract!)"}`);
+    console.log(`${name} ${address}: bytecode ${code && code !== "0x" ? `${(code.length - 2) / 2} bytes` : "EMPTY (not a contract!)"}`);
   }
 
-  console.log("\nCross-check: PoolAddressesProvider.getPool() should equal POOL —");
+  console.log("\nCross-check: PoolAddressesProvider.getPool() should equal POOL");
   const poolFromProvider = await client.readContract({
     address: CANDIDATES.POOL_ADDRESSES_PROVIDER as `0x${string}`,
     abi: PROVIDER_ABI,
@@ -47,7 +47,7 @@ async function main() {
   console.log(`  getPool() returned: ${poolFromProvider}`);
   console.log(`  matches POOL const: ${poolFromProvider.toLowerCase() === CANDIDATES.POOL.toLowerCase()}`);
 
-  console.log("\nPool.getReservesList() —");
+  console.log("\nPool.getReservesList()");
   const reserves = await client.readContract({
     address: CANDIDATES.POOL as `0x${string}`,
     abi: POOL_ABI,
