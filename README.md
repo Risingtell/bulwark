@@ -64,9 +64,23 @@ Config (`.env`):
 - `HF_TARGET`: health factor a trigger repays enough debt to reach, must be greater than `HF_THRESHOLD` (default `1.5`).
 - `MAX_REPAY_USDC`: optional ceiling on how much a single trigger will ever repay, regardless of what the sizing math computes.
 
-## Status
+## Status and honest limitations
 
-Core loop proven live end to end on Sepolia, including the computed-repay-sizing logic landing health factor within 6 decimal places of its configured target, and multi-position polling verified concurrent against 2 real addresses. Build window is July 27 to August 13, 2026. See `JUDGE-QUICKSTART.md` for the fastest path to verify all of this yourself, and `scripts/README.md` for what every script in this repo does.
+Core loop proven live end to end on Sepolia, including the computed-repay-sizing logic landing health factor within 6 decimal places of its configured target, and multi-position polling verified concurrent against 2 real addresses. Build window is July 27 to August 13, 2026.
+
+What is deliberately not claimed:
+
+- **Testnet only.** This targets Aave V3 on Ethereum Sepolia. It has not been audited and should not be pointed at a mainnet position.
+- **One protocol, one debt asset.** The repay path is wired for Aave V3 and USDC specifically. Nothing here generalises to other protocols yet.
+- **The reserve wallet must be funded.** Bulwark repays from a KeeperHub-custodied wallet. If that wallet runs dry, the trigger fires and the repay fails. There is no auto-refill.
+- **Reconnect handling is coarse.** Bulwark reconnects when every monitored position fails in the same cycle. A partial or intermittent connection failure is not specifically detected.
+
+## Further reading
+
+- `JUDGE-QUICKSTART.md`: the fastest path to verify every claim above yourself.
+- `scripts/README.md`: what every script in this repo does, and which ones are safe to re-run.
+- `SECURITY.md`: credential handling, and the design decisions in the agent loop that exist to prevent a double repay.
+- `CONTRIBUTING.md`: setup, the checks to run before a pull request, and this codebase's house rules.
 
 ## License
 
