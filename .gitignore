@@ -2,3 +2,9 @@ node_modules/
 .env
 build/
 *.log
+
+# Internal working documents, not for the public repo (hackathon-ship skill section 4)
+SUBMISSION.md
+DEMO_SCRIPT.md
+BOUNTY-TEARDOWN.md
+PLAN.md
