@@ -38,6 +38,16 @@ npm test
 npm run verify
 ```
 
+There is no ESLint here on purpose, not by oversight. This project runs
+TypeScript 7, and `typescript-eslint` does not support TS 7 yet as of this
+writing (there is a tracked upstream issue,
+`typescript-eslint/typescript-eslint#10940`). Installing it produces a hard
+runtime error, not a warning. In its place, `tsconfig.json` turns on
+`noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, and
+`noFallthroughCasesInSwitch` on top of `strict`, so `npm run build` catches
+what a basic linter would. Revisit adding ESLint once that upstream issue
+closes.
+
 ## House rules for this codebase
 
 - **Verify against real infrastructure, do not assume.** Every contract
