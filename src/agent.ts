@@ -87,11 +87,14 @@ function parseAddressList(raw: string): string[] {
 export async function main(): Promise<void> {
   const apiKey = requireEnv("KEEPERHUB_API_KEY");
   const monitoredAddresses = parseAddressList(requireEnv("MONITORED_ADDRESSES"));
+  if (monitoredAddresses.length === 0) throw new Error("MONITORED_ADDRESSES is set but contains no addresses after parsing");
   const hfThreshold = Number(process.env.HF_THRESHOLD ?? "1.2");
   const hfTarget = Number(process.env.HF_TARGET ?? "1.5");
   const maxRepayUsdc = process.env.MAX_REPAY_USDC;
   const maxRepayRawUnits = maxRepayUsdc ? BigInt(maxRepayUsdc) * 10n ** BigInt(USDC.decimals) : null;
 
+  if (!Number.isFinite(hfThreshold)) throw new Error(`HF_THRESHOLD must be a number, got "${process.env.HF_THRESHOLD}"`);
+  if (!Number.isFinite(hfTarget)) throw new Error(`HF_TARGET must be a number, got "${process.env.HF_TARGET}"`);
   if (hfTarget <= hfThreshold) throw new Error(`HF_TARGET (${hfTarget}) must be greater than HF_THRESHOLD (${hfThreshold})`);
 
   console.log(`Bulwark starting, watching ${monitoredAddresses.length} position(s): ${monitoredAddresses.join(", ")}`);

@@ -11,8 +11,9 @@
  * decoding top-level calldata against Aave's repay() ABI produces garbage
  * for these, since the relay's own calldata isn't Aave's), so those are instead
  * verified via the underlying event logs: the plain ERC20 Transfer into
- * Aave's aUSDC contract (unambiguous, standard, no relay-specific ABI
- * needed) and Aave's own Repay event's three indexed addresses.
+ * Aave's aEthUSDC receipt token contract (unambiguous, standard, no
+ * relay-specific ABI needed) and Aave's own Repay event's three indexed
+ * addresses.
  */
 import { decodeAbiParameters, parseAbiParameters } from "viem";
 import { publicClient, AAVE_V3_SEPOLIA } from "../src/chain/sepolia.js";
@@ -68,7 +69,7 @@ async function verifyRepay(hash: `0x${string}`, label: string, expectedAmountRaw
   const transferLog = receipt.logs.find(
     (l) => l.address.toLowerCase() === USDC && l.topics[0] === ERC20_TRANSFER_TOPIC && l.topics[2] && ("0x" + l.topics[2].slice(-40)).toLowerCase() === A_USDC,
   );
-  check("found a real USDC Transfer event into Aave's aUSDC contract", transferLog !== undefined);
+  check("found a real USDC Transfer event into Aave's aEthUSDC contract", transferLog !== undefined);
   if (transferLog) {
     const value = BigInt(transferLog.data);
     check(`Transfer value matches the claimed amount exactly (got ${value}, expected ${expectedAmountRaw})`, value === expectedAmountRaw);

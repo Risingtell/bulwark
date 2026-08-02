@@ -28,11 +28,13 @@ npm run verify
 
 **What proves the claim:** re-derives three real Sepolia transactions
 directly from chain data (a borrow, a fixed-amount repay, and a
-computed-sizing repay), independent of anything this README says. It checks
-the actual on-chain event logs (the USDC `Transfer` into Aave's own aUSDC
-contract, and Aave's own `Repay` event), not just that a transaction exists.
-Expected output: `ALL CHECKS PASSED`. Every hash it checks is also clickable
-on Sepolia Etherscan if you want to look yourself:
+computed-sizing repay), independent of anything this README says. The
+borrow is checked via its decoded calldata; the two repays are checked via
+their actual on-chain event logs instead (the USDC `Transfer` into Aave's
+own aEthUSDC receipt token, and Aave's own `Repay` event), since KeeperHub
+executes them through its own relay contract. Expected output:
+`ALL CHECKS PASSED`. Every hash it checks is also clickable on Sepolia
+Etherscan if you want to look yourself:
 
 - Borrow: https://sepolia.etherscan.io/tx/0x8bf14628cc6b0f71252db60037f8bc47ab1f3da9ac9330ce8bf73a302646dc78
 - First repay (fixed 60 USDC): https://sepolia.etherscan.io/tx/0xf59fdb427cea9702f06ff2db4f84e8c8171769e33a07b8b2967ab0744c50b547
