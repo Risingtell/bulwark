@@ -8,6 +8,7 @@
  */
 import "dotenv/config";
 import { fileURLToPath } from "node:url";
+import { getAddress } from "viem";
 import { connectKeeperHub } from "./keeperhub/client.js";
 import { checkPositionViaKeeperHub, repayOnBehalfOf } from "./keeperhub/aave.js";
 import { USDC } from "./chain/sepolia.js";
@@ -16,10 +17,30 @@ import { computeRepayAmountBase, baseUnitsToAssetRawUnits } from "./engine/repay
 
 const POLL_INTERVAL_MS = 60_000;
 
+// Aave liquidates at HF < 1.0. A threshold right at that line gives no real lead time: KeeperHub
+// round trips have taken well over a minute under load in testing, and the poll interval itself is
+// 60s, so a threshold of, say, 1.01 could still let a fast-moving position slip into actual
+// liquidation before a repay lands. 1.05 gives real margin without being an arbitrary-feeling number.
+const MIN_HF_THRESHOLD = 1.05;
+
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required env var: ${name}`);
   return value;
+}
+
+/**
+ * Parses a numeric env var, falling back to `fallback` when the var is unset OR blank/whitespace
+ * (dotenv turns `HF_THRESHOLD=` into an empty string, not undefined, so `?? fallback` alone misses
+ * this case). Throws on anything present but not a real number, rather than silently coercing a
+ * garbled value to 0 or NaN and letting it slip past downstream checks.
+ */
+export function parseNumericEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) throw new Error(`${name} must be a number, got "${raw}"`);
+  return parsed;
 }
 
 /** Per-address lock. A slow tick (KeeperHub latency has run past a minute in testing) must not overlap with the next poll for the same address and risk a double repay. */
@@ -80,22 +101,43 @@ export async function tick(client: Awaited<ReturnType<typeof connectKeeperHub>>,
   }
 }
 
-function parseAddressList(raw: string): string[] {
-  return raw.split(",").map((a) => a.trim()).filter(Boolean);
+/**
+ * Splits, trims, and checksum-normalizes a comma-separated address list (via viem's getAddress,
+ * which also rejects anything malformed immediately at startup rather than failing per-tick later).
+ * Normalizing matters beyond cosmetics: without it, the same address listed twice with different
+ * casing would bypass the per-address inFlight lock (a raw string Set), letting both entries read
+ * the same pre-repay snapshot and fire a repay concurrently. Duplicates are rejected outright rather
+ * than silently deduped, since listing one twice is almost certainly a config mistake worth surfacing.
+ */
+export function parseAddressList(raw: string): string[] {
+  const addresses = raw.split(",").map((a) => a.trim()).filter(Boolean).map((a) => getAddress(a));
+  const seen = new Set<string>();
+  for (const address of addresses) {
+    if (seen.has(address)) throw new Error(`MONITORED_ADDRESSES lists ${address} more than once`);
+    seen.add(address);
+  }
+  return addresses;
+}
+
+/**
+ * Validates the threshold/target pair in isolation from env parsing, so the safety floor logic has
+ * direct test coverage rather than only being exercised by running the whole agent.
+ */
+export function resolveHfConfig(hfThreshold: number, hfTarget: number): { hfThreshold: number; hfTarget: number } {
+  if (hfThreshold <= MIN_HF_THRESHOLD) {
+    throw new Error(`HF_THRESHOLD (${hfThreshold}) must be greater than ${MIN_HF_THRESHOLD}: Aave liquidates at HF < 1.0, and a threshold too close to that line leaves no real time to act before the position is actually liquidatable`);
+  }
+  if (hfTarget <= hfThreshold) throw new Error(`HF_TARGET (${hfTarget}) must be greater than HF_THRESHOLD (${hfThreshold})`);
+  return { hfThreshold, hfTarget };
 }
 
 export async function main(): Promise<void> {
   const apiKey = requireEnv("KEEPERHUB_API_KEY");
   const monitoredAddresses = parseAddressList(requireEnv("MONITORED_ADDRESSES"));
   if (monitoredAddresses.length === 0) throw new Error("MONITORED_ADDRESSES is set but contains no addresses after parsing");
-  const hfThreshold = Number(process.env.HF_THRESHOLD ?? "1.2");
-  const hfTarget = Number(process.env.HF_TARGET ?? "1.5");
+  const { hfThreshold, hfTarget } = resolveHfConfig(parseNumericEnv("HF_THRESHOLD", 1.2), parseNumericEnv("HF_TARGET", 1.5));
   const maxRepayUsdc = process.env.MAX_REPAY_USDC;
   const maxRepayRawUnits = maxRepayUsdc ? BigInt(maxRepayUsdc) * 10n ** BigInt(USDC.decimals) : null;
-
-  if (!Number.isFinite(hfThreshold)) throw new Error(`HF_THRESHOLD must be a number, got "${process.env.HF_THRESHOLD}"`);
-  if (!Number.isFinite(hfTarget)) throw new Error(`HF_TARGET must be a number, got "${process.env.HF_TARGET}"`);
-  if (hfTarget <= hfThreshold) throw new Error(`HF_TARGET (${hfTarget}) must be greater than HF_THRESHOLD (${hfThreshold})`);
 
   console.log(`Bulwark starting, watching ${monitoredAddresses.length} position(s): ${monitoredAddresses.join(", ")}`);
   console.log(`threshold HF<${hfThreshold}, repay sized to land at HF~${hfTarget}${maxRepayRawUnits !== null ? `, capped at ${maxRepayUsdc} USDC per trigger` : ""}`);

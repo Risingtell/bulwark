@@ -34,6 +34,20 @@ test("baseUnitsToAssetRawUnits converts base-currency USD into raw USDC units at
   assert.ok(raw > 55_000_000n && raw < 56_000_000n, `expected ~55.24 USDC raw units, got ${raw}`);
 });
 
+test("baseUnitsToAssetRawUnits converts correctly at a non-$1.00 price (every prior test used a $1 peg, which would have hidden a broken price ratio or decimals mishandling)", () => {
+  const priceBase = 250_000_000n; // a hypothetical asset priced at $2.50
+  const raw = baseUnitsToAssetRawUnits(5_524_193_058n, priceBase, 6);
+  // $55.24 worth of a $2.50 asset is ~22.097 units.
+  assert.ok(raw > 22_000_000n && raw < 22_200_000n, `expected ~22.097 units, got ${raw}`);
+});
+
+test("baseUnitsToAssetRawUnits scales correctly for an 18-decimal asset, not just USDC's 6", () => {
+  const priceBase = 100_000_000n; // $1.00
+  const raw = baseUnitsToAssetRawUnits(5_524_193_058n, priceBase, 18);
+  // Same $55.24, but in 18-decimal terms: 55.24 * 10^18, not 10^6.
+  assert.ok(raw > 55_000_000_000_000_000_000n && raw < 56_000_000_000_000_000_000n, `expected ~55.24e18, got ${raw}`);
+});
+
 test("baseUnitsToAssetRawUnits throws on a non-positive price instead of dividing by zero", () => {
   assert.throws(() => baseUnitsToAssetRawUnits(1000n, 0n, 6));
   assert.throws(() => baseUnitsToAssetRawUnits(1000n, -1n, 6));

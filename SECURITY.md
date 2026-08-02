@@ -48,10 +48,25 @@ remove them without understanding why they are there.
   internally and silently under repaid by a factor of one million when the
   conversion was missed, with no error raised. Keep the conversion in one
   place (`src/engine/repaySizing.ts`) and keep the boundary explicit.
-- **Config is validated at startup.** `HF_THRESHOLD` and `HF_TARGET` must
-  parse to finite numbers. A `NaN` here would make the health check fail
-  open, because every comparison against `NaN` is false, which would cause
-  the agent to attempt a repay on every tick for every position.
+- **Config is validated at startup, and this has already caught real bugs
+  twice.** `HF_THRESHOLD` and `HF_TARGET` must parse to finite numbers: a
+  `NaN` here would make the health check fail open, since every comparison
+  against `NaN` is false, causing a repay attempt on every tick for every
+  position. A blank env var is a separate case from a missing one: dotenv
+  turns `HF_THRESHOLD=` into an empty string rather than `undefined`, and
+  `Number("")` is `0`, which is finite and would have slipped past the
+  `NaN` check while silently disabling protection with no error at all.
+  There is also a hard floor: `HF_THRESHOLD` must be greater than `1.05`,
+  since Aave liquidates at HF < 1.0 and a threshold right at that line
+  gives no real lead time to act. Both the blank-env case and the missing
+  floor were found by an independent code review, not the author's own,
+  after the author's own repeated review had missed them. See
+  `parseNumericEnv` and `resolveHfConfig` in `src/agent.ts`, and
+  `test/agent.test.ts` for the regression coverage.
+- **Monitored addresses are checksum-normalized and rejected if duplicated.**
+  Without this, the same address listed twice under different casing would
+  bypass the per-address tick lock (a plain string `Set`), letting both
+  entries read the same snapshot and fire a repay concurrently.
 
 ## Reporting a vulnerability
 
