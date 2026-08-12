@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bulwark Console. Watch a real Aave position live</title>
+<meta name="description" content="Read-only console for Bulwark, an Aave V3 health-factor guardian executed through KeeperHub. Watch a real Sepolia position's health factor live, and check the transactions Bulwark has already executed." />
+<link rel="icon" type="image/png" href="logo.png" />
+<style>
+  :root{
+    --steel:#2A5C7A; --steel2:#3B7FA6; --amber:#B8763E;
+    --ink:#101820; --muted:#5A6B78;
+    --bg:#F8FAFB; --card:#FFFFFF; --line:#E1E8EC; --soft:#EEF3F5;
+    --safe:#047857; --safebg:#ECFDF5;
+    --caution:#B45309; --cautionbg:#FFFBEB;
+    --danger:#B42318; --dangerbg:#FEF3F2;
+    --nodebt:#5A6B78; --nodebtbg:#F1F4F5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{max-width:100%;overflow-x:hidden}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--steel)}
+  .mono,code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+
+  nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
+    background:rgba(248,250,251,.88);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px}
+  .brand img{width:30px;height:30px;border-radius:8px}
+  nav a.back{font-size:14px;color:var(--muted);text-decoration:none}
+  nav a.back:hover{color:var(--ink)}
+
+  header{padding:54px 0 26px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--steel);
+    border:1px solid rgba(42,92,122,.28);background:rgba(42,92,122,.06);
+    padding:6px 13px;border-radius:999px;margin-bottom:18px;font-weight:600}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--steel2)}
+  h1{font-size:38px;line-height:1.14;font-weight:800;letter-spacing:-1px;margin-bottom:14px}
+  .sub{font-size:17px;color:var(--muted);max-width:720px}
+  @media(max-width:680px){h1{font-size:28px}header{padding:38px 0 20px}}
+
+  section{padding:20px 0 54px}
+  .section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--muted);margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px;margin-bottom:16px}
+  .card h3{font-size:17px;font-weight:700;margin-bottom:6px}
+  .card p.desc{color:var(--muted);font-size:14.5px;margin-bottom:14px}
+
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  input[type=text]{font:inherit;font-size:13.5px;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--line);flex:1;min-width:240px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  button{font:inherit;font-weight:600;font-size:14.5px;padding:11px 20px;border-radius:11px;
+    border:0;cursor:pointer;background:linear-gradient(135deg,var(--steel),var(--steel2));
+    color:#fff;box-shadow:0 8px 20px rgba(42,92,122,.24);transition:transform .12s ease,opacity .2s}
+  button:hover:not(:disabled){transform:translateY(-1px)}
+  button:disabled{opacity:.55;cursor:progress;box-shadow:none}
+  button.ghost{background:none;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+  button.ghost:hover:not(:disabled){border-color:var(--steel);color:var(--steel)}
+
+  .badge{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;
+    padding:6px 13px;border-radius:999px}
+  .badge.SAFE{color:var(--safe);background:var(--safebg)}
+  .badge.CAUTION{color:var(--caution);background:var(--cautionbg)}
+  .badge.DANGER,.badge.LIQUIDATABLE{color:var(--danger);background:var(--dangerbg)}
+  .badge.NO_DEBT{color:var(--nodebt);background:var(--nodebtbg)}
+
+  .hf-display{font-size:44px;font-weight:800;letter-spacing:-1px;margin:14px 0 4px}
+  .gauge{height:10px;border-radius:999px;background:var(--soft);overflow:hidden;margin:14px 0}
+  .gauge-fill{height:100%;border-radius:999px;transition:width .4s ease,background .4s ease}
+
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:14px;margin-top:16px}
+  .kv dt{color:var(--muted)}
+  .kv dd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+  @media(max-width:560px){.kv{grid-template-columns:1fr;gap:2px 0}.kv dd{margin-bottom:8px}}
+
+  .status-line{font-size:13px;color:var(--muted);margin-top:10px}
+  .status-line.error{color:var(--danger)}
+
+  .tx-item{border-top:1px solid var(--line);padding:16px 0}
+  .tx-item:first-child{border-top:none;padding-top:0}
+  .tx-item h4{font-size:15px;margin-bottom:4px}
+  .tx-item p{font-size:13.5px;color:var(--muted);margin-bottom:6px}
+  .tx-item a{font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .step .num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:50%;background:var(--soft);color:var(--steel);font-weight:800;font-size:12.5px;margin-bottom:10px}
+  .step h4{font-size:14.5px;margin-bottom:5px}
+  .step p{font-size:13px;color:var(--muted)}
+
+  .note{background:var(--soft);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;font-size:13.5px;color:var(--muted);margin-bottom:22px}
+
+  footer{border-top:1px solid var(--line);padding:26px 0 44px;color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand"><img src="logo.png" alt="Bulwark" /><span>Bulwark Console</span></div>
+    <a class="back" href="https://github.com/Risingtell/bulwark" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="pill"><span class="dot"></span>Live read, Sepolia testnet, no wallet needed</div>
+    <h1>Watch a real Aave position, live</h1>
+    <p class="sub">Bulwark watches an Aave V3 position's health factor and repays debt on the borrower's behalf, through KeeperHub, when it drops below a safe threshold. This page makes the same read-only call the agent makes, straight from your browser to a public Sepolia RPC. Nothing here is mocked.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+
+    <div class="section-title">Position</div>
+    <div class="card">
+      <h3 id="posTitle">Demo borrower position</h3>
+      <p class="desc">Prefilled with the address Bulwark has been protecting throughout this build. Paste any Aave V3 Sepolia address to check it instead.</p>
+      <div class="row">
+        <input id="addrInput" type="text" value="0x30a4D03B3640dB4B902D2313216e1F569faF5A83" spellcheck="false" />
+        <button id="checkBtn">Check health factor</button>
+        <button id="autoBtn" class="ghost">Auto-refresh: off</button>
+      </div>
+
+      <div id="result" style="display:none;margin-top:20px">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="hf-display" id="hfValue">&mdash;</div>
+            <div id="badge" class="badge NO_DEBT">NO DEBT</div>
+          </div>
+        </div>
+        <div class="gauge"><div class="gauge-fill" id="gaugeFill" style="width:0%"></div></div>
+        <dl class="kv">
+          <dt>Collateral (USD)</dt><dd id="kvCollateral">&mdash;</dd>
+          <dt>Debt (USD)</dt><dd id="kvDebt">&mdash;</dd>
+          <dt>Last checked</dt><dd id="kvChecked">&mdash;</dd>
+        </dl>
+      </div>
+      <div id="statusLine" class="status-line">Not checked yet.</div>
+    </div>
+
+    <div class="note">Reads call Aave's Pool contract (<code>0x6Ae4...8951</code>) directly via <code>getUserAccountData</code>, the same function and the same public RPC Bulwark's own verifier uses. Below 1.1 is DANGER, below 1.5 is CAUTION, below 1.0 is already liquidatable. Bulwark's agent triggers a repay below 1.2.</div>
+
+    <div class="section-title">Proven on-chain</div>
+    <div class="card">
+      <div class="tx-item">
+        <h4>Borrow, opens the demo position</h4>
+        <p>200 USDC borrowed on behalf of the demo borrower, sets up the position this console watches.</p>
+        <a href="https://sepolia.etherscan.io/tx/0x8bf14628cc6b0f71252db60037f8bc47ab1f3da9ac9330ce8bf73a302646dc78" target="_blank" rel="noopener">0x8bf14628&hellip;46dc78 on Etherscan &rarr;</a>
+      </div>
+      <div class="tx-item">
+        <h4>First live catch-and-repay</h4>
+        <p>Bulwark's agent detected HF below threshold and executed a repay through KeeperHub, no human involved.</p>
+        <a href="https://sepolia.etherscan.io/tx/0xf59fdb427cea9702f06ff2db4f84e8c8171769e33a07b8b2967ab0744c50b547" target="_blank" rel="noopener">0xf59fdb42&hellip;4c50b547 on Etherscan &rarr;</a>
+      </div>
+      <div class="tx-item">
+        <h4>Computed-sizing repay</h4>
+        <p>Repaid exactly enough to land the position at HF 1.500006 against a configured target of 1.5, accurate to 6 decimal places, not a round fixed amount.</p>
+        <a href="https://sepolia.etherscan.io/tx/0xbe0dcaa912a4b3261913ae23a47d95b166474c12f0d5fa7c14105d2a37930cc0" target="_blank" rel="noopener">0xbe0dcaa9&hellip;37930cc0 on Etherscan &rarr;</a>
+      </div>
+    </div>
+
+    <div class="section-title">How it works</div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h4>Read</h4><p>Every 60 seconds, reads each watched position's health factor through KeeperHub.</p></div>
+      <div class="step"><div class="num">2</div><h4>Decide</h4><p>Below threshold, computes exactly how much debt to repay to reach a safe target, not a fixed guess.</p></div>
+      <div class="step"><div class="num">3</div><h4>Act</h4><p>Executes the repay through KeeperHub, on-chain, with a real reserve wallet. No local signer.</p></div>
+      <div class="step"><div class="num">4</div><h4>Verify</h4><p><code>npm run verify</code> re-derives every claim above from chain data. No API key required.</p></div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Bulwark is open source, MIT licensed. <a href="https://github.com/Risingtell/bulwark" target="_blank" rel="noopener">github.com/Risingtell/bulwark</a>. Built for the KeeperHub Agents Onchain hackathon.
+  </div>
+</footer>
+
+<script type="module">
+import { createPublicClient, http, defineChain, getAddress } from "https://esm.sh/viem@2.55.10";
+
+const sepolia = defineChain({
+  id: 11155111,
+  name: "Sepolia",
+  nativeCurrency: { name: "Sepolia Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["https://ethereum-sepolia-rpc.publicnode.com"] } },
+  blockExplorers: { default: { name: "Etherscan", url: "https://sepolia.etherscan.io" } },
+});
+
+const client = createPublicClient({ chain: sepolia, transport: http() });
+
+const POOL = "0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951";
+const POOL_ABI = [{
+  type: "function", name: "getUserAccountData", stateMutability: "view",
+  inputs: [{ name: "user", type: "address" }],
+  outputs: [
+    { name: "totalCollateralBase", type: "uint256" },
+    { name: "totalDebtBase", type: "uint256" },
+    { name: "availableBorrowsBase", type: "uint256" },
+    { name: "currentLiquidationThreshold", type: "uint256" },
+    { name: "ltv", type: "uint256" },
+    { name: "healthFactor", type: "uint256" },
+  ],
+}];
+
+const WAD = 10n ** 18n;
+const MAX_UINT256 = 2n ** 256n - 1n;
+
+function parseHealthFactor(hf, debt) {
+  if (debt === 0n || hf >= MAX_UINT256 / 2n) return null;
+  return Number(hf) / Number(WAD);
+}
+
+function classifyRisk(hf) {
+  if (hf === null) return "NO_DEBT";
+  if (hf < 1.0) return "LIQUIDATABLE";
+  if (hf < 1.1) return "DANGER";
+  if (hf < 1.5) return "CAUTION";
+  return "SAFE";
+}
+
+const gaugeColor = { SAFE: "#047857", CAUTION: "#B45309", DANGER: "#B42318", LIQUIDATABLE: "#B42318", NO_DEBT: "#5A6B78" };
+
+const addrInput = document.getElementById("addrInput");
+const checkBtn = document.getElementById("checkBtn");
+const autoBtn = document.getElementById("autoBtn");
+const result = document.getElementById("result");
+const statusLine = document.getElementById("statusLine");
+
+let autoTimer = null;
+
+async function check() {
+  let address;
+  try {
+    address = getAddress(addrInput.value.trim());
+  } catch {
+    statusLine.textContent = "Not a valid address.";
+    statusLine.classList.add("error");
+    return;
+  }
+
+  checkBtn.disabled = true;
+  statusLine.classList.remove("error");
+  statusLine.textContent = "Reading live from Sepolia...";
+
+  try {
+    const [totalCollateralBase, totalDebtBase, , , , healthFactorRaw] = await client.readContract({
+      address: POOL, abi: POOL_ABI, functionName: "getUserAccountData", args: [address],
+    });
+
+    const hf = parseHealthFactor(healthFactorRaw, totalDebtBase);
+    const risk = classifyRisk(hf);
+    const collateralUsd = Number(totalCollateralBase) / 1e8;
+    const debtUsd = Number(totalDebtBase) / 1e8;
+
+    document.getElementById("hfValue").textContent = hf === null ? "No debt" : hf.toFixed(4);
+    const badge = document.getElementById("badge");
+    badge.textContent = risk.replace("_", " ");
+    badge.className = "badge " + risk;
+
+    const gaugeFill = document.getElementById("gaugeFill");
+    const pct = hf === null ? 100 : Math.max(4, Math.min(100, (hf / 2) * 100));
+    gaugeFill.style.width = pct + "%";
+    gaugeFill.style.background = gaugeColor[risk];
+
+    document.getElementById("kvCollateral").textContent = "$" + collateralUsd.toFixed(2);
+    document.getElementById("kvDebt").textContent = "$" + debtUsd.toFixed(2);
+    document.getElementById("kvChecked").textContent = new Date().toLocaleTimeString();
+
+    result.style.display = "block";
+    statusLine.textContent = "Live read succeeded, straight from Sepolia via getUserAccountData.";
+  } catch (err) {
+    statusLine.textContent = "Read failed: " + (err && err.shortMessage ? err.shortMessage : String(err));
+    statusLine.classList.add("error");
+  } finally {
+    checkBtn.disabled = false;
+  }
+}
+
+checkBtn.addEventListener("click", check);
+autoBtn.addEventListener("click", () => {
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+    autoBtn.textContent = "Auto-refresh: off";
+  } else {
+    autoTimer = setInterval(check, 30000);
+    autoBtn.textContent = "Auto-refresh: on (30s)";
+  }
+});
+
+check();
+</script>
+
+</body>
+</html>

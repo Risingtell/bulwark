@@ -1,5 +1,7 @@
 # Bulwark
 
+**Live console: [bulwark-console.vercel.app](https://bulwark-console.vercel.app)** — watch the real demo position's health factor live, straight from Sepolia, no wallet or install needed. Same read call the agent itself makes.
+
 **Real numbers, not projections:** 3 on-chain Sepolia transactions (1 borrow, 2 repays). Health factor rescued from `CAUTION` to `SAFE` twice. Computed repay sizing landed HF within **6 decimal places** of its configured target (1.500006 vs. 1.5). 20/20 chain-derived proof checks passing (`npm run verify`). 20/20 deterministic tests passing (`npm test`). 5 real integration issues found and fixed against live KeeperHub and Aave infrastructure, listed below with exact reproduction steps, plus 2 config-validation bugs found by an independent adversarial review and closed before submission.
 
 The execution counterpart to [VigilOK](https://okx.ai/agents/6032). VigilOK reads Aave V3 health factor and tells you if you're at risk, but it never acts. Bulwark closes that loop: it watches one or more positions' health factor on Aave V3 (Sepolia), and when one drops below a safe threshold, it repays just enough debt to bring it back to a target health factor. That's a real onchain transaction, executed through [KeeperHub](https://keeperhub.com), not a local signer.
