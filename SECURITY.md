@@ -58,11 +58,9 @@ remove them without understanding why they are there.
   `NaN` check while silently disabling protection with no error at all.
   There is also a hard floor: `HF_THRESHOLD` must be greater than `1.05`,
   since Aave liquidates at HF < 1.0 and a threshold right at that line
-  gives no real lead time to act. Both the blank-env case and the missing
-  floor were found by an independent code review, not the author's own,
-  after the author's own repeated review had missed them. See
-  `parseNumericEnv` and `resolveHfConfig` in `src/agent.ts`, and
-  `test/agent.test.ts` for the regression coverage.
+  gives no real lead time to act. See `parseNumericEnv` and
+  `resolveHfConfig` in `src/agent.ts`, and `test/agent.test.ts` for the
+  regression coverage.
 - **Monitored addresses are checksum-normalized and rejected if duplicated.**
   Without this, the same address listed twice under different casing would
   bypass the per-address tick lock (a plain string `Set`), letting both
