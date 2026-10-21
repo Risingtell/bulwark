@@ -18,7 +18,7 @@
     "verify": "tsx scripts/verify-live-proof.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "dotenv": "^17.4.2",
     "viem": "^2.55.10"
   },
